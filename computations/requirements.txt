@@ -1,0 +1,6 @@
+Flask==3.0.3
+requests==2.32.3
+numpy==1.23.5
+sgp4==2.24
+Shapely==1.8.5.post1
+gunicorn

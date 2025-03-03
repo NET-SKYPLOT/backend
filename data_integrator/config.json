@@ -1,0 +1,738 @@
+{
+  "almanac": [
+    {
+      "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=json-pretty",
+      "tle_url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=tle",
+      "refresh_hours": 6,
+      "refresh_limit_rate_minutes": 120
+    }
+  ],
+  "dem": [
+    {
+      "source": "ot",
+      "url": "https://portal.opentopography.org/API/globaldem"
+    }
+  ],
+  "constellations": {
+    "GPS": {
+      "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=gps-ops&FORMAT=json",
+      "sats": [
+        {
+          "name": "GPS BIIR-2  (PRN 13)",
+          "norad_id": 24876,
+          "object_id": "1997-035A"
+        },
+        {
+          "name": "GPS BIIR-4  (PRN 20)",
+          "norad_id": 26360,
+          "object_id": "2000-025A"
+        },
+        {
+          "name": "GPS BIIR-5  (PRN 22)",
+          "norad_id": 26407,
+          "object_id": "2000-040A"
+        },
+        {
+          "name": "GPS BIIR-8  (PRN 16)",
+          "norad_id": 27663,
+          "object_id": "2003-005A"
+        },
+        {
+          "name": "GPS BIIR-11 (PRN 19)",
+          "norad_id": 28190,
+          "object_id": "2004-009A"
+        },
+        {
+          "name": "GPS BIIR-13 (PRN 02)",
+          "norad_id": 28474,
+          "object_id": "2004-045A"
+        },
+        {
+          "name": "GPS BIIRM-1 (PRN 17)",
+          "norad_id": 28874,
+          "object_id": "2005-038A"
+        },
+        {
+          "name": "GPS BIIRM-2 (PRN 31)",
+          "norad_id": 29486,
+          "object_id": "2006-042A"
+        },
+        {
+          "name": "GPS BIIRM-3 (PRN 12)",
+          "norad_id": 29601,
+          "object_id": "2006-052A"
+        },
+        {
+          "name": "GPS BIIRM-4 (PRN 15)",
+          "norad_id": 32260,
+          "object_id": "2007-047A"
+        },
+        {
+          "name": "GPS BIIRM-5 (PRN 29)",
+          "norad_id": 32384,
+          "object_id": "2007-062A"
+        },
+        {
+          "name": "GPS BIIRM-6 (PRN 07)",
+          "norad_id": 32711,
+          "object_id": "2008-012A"
+        },
+        {
+          "name": "GPS BIIRM-8 (PRN 05)",
+          "norad_id": 35752,
+          "object_id": "2009-043A"
+        },
+        {
+          "name": "GPS BIIF-1  (PRN 25)",
+          "norad_id": 36585,
+          "object_id": "2010-022A"
+        },
+        {
+          "name": "GPS BIIF-3  (PRN 24)",
+          "norad_id": 38833,
+          "object_id": "2012-053A"
+        },
+        {
+          "name": "GPS BIIF-4  (PRN 27)",
+          "norad_id": 39166,
+          "object_id": "2013-023A"
+        },
+        {
+          "name": "GPS BIIF-5  (PRN 30)",
+          "norad_id": 39533,
+          "object_id": "2014-008A"
+        },
+        {
+          "name": "GPS BIIF-6  (PRN 06)",
+          "norad_id": 39741,
+          "object_id": "2014-026A"
+        },
+        {
+          "name": "GPS BIIF-7  (PRN 09)",
+          "norad_id": 40105,
+          "object_id": "2014-045A"
+        },
+        {
+          "name": "GPS BIIF-8  (PRN 03)",
+          "norad_id": 40294,
+          "object_id": "2014-068A"
+        },
+        {
+          "name": "GPS BIIF-9  (PRN 26)",
+          "norad_id": 40534,
+          "object_id": "2015-013A"
+        },
+        {
+          "name": "GPS BIIF-10 (PRN 08)",
+          "norad_id": 40730,
+          "object_id": "2015-033A"
+        },
+        {
+          "name": "GPS BIIF-11 (PRN 10)",
+          "norad_id": 41019,
+          "object_id": "2015-062A"
+        },
+        {
+          "name": "GPS BIIF-12 (PRN 32)",
+          "norad_id": 41328,
+          "object_id": "2016-007A"
+        },
+        {
+          "name": "GPS BIII-1  (PRN 04)",
+          "norad_id": 43873,
+          "object_id": "2018-109A"
+        },
+        {
+          "name": "GPS BIII-2  (PRN 18)",
+          "norad_id": 44506,
+          "object_id": "2019-056A"
+        },
+        {
+          "name": "GPS BIII-3  (PRN 23)",
+          "norad_id": 45854,
+          "object_id": "2020-041A"
+        },
+        {
+          "name": "GPS BIII-4  (PRN 14)",
+          "norad_id": 46826,
+          "object_id": "2020-078A"
+        },
+        {
+          "name": "GPS BIII-5  (PRN 11)",
+          "norad_id": 48859,
+          "object_id": "2021-054A"
+        },
+        {
+          "name": "GPS BIII-6  (PRN 28)",
+          "norad_id": 55268,
+          "object_id": "2023-009A"
+        },
+        {
+          "name": "GPS BIII-7  (PRN 01)",
+          "norad_id": 62339,
+          "object_id": "2024-242A"
+        }
+      ]
+    },
+    "GAL": {
+      "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=galileo&FORMAT=json",
+      "sats": [
+        {
+          "name": "GSAT0101 (GALILEO-PFM)",
+          "norad_id": 37846,
+          "object_id": "2011-060A"
+        },
+        {
+          "name": "GSAT0102 (GALILEO-FM2)",
+          "norad_id": 37847,
+          "object_id": "2011-060B"
+        },
+        {
+          "name": "GSAT0103 (GALILEO-FM3)",
+          "norad_id": 38857,
+          "object_id": "2012-055A"
+        },
+        {
+          "name": "GSAT0201 (GALILEO 5)",
+          "norad_id": 40128,
+          "object_id": "2014-050A"
+        },
+        {
+          "name": "GSAT0202 (GALILEO 6)",
+          "norad_id": 40129,
+          "object_id": "2014-050B"
+        },
+        {
+          "name": "GSAT0203 (GALILEO 7)",
+          "norad_id": 40544,
+          "object_id": "2015-017A"
+        },
+        {
+          "name": "GSAT0204 (GALILEO 8)",
+          "norad_id": 40545,
+          "object_id": "2015-017B"
+        },
+        {
+          "name": "GSAT0205 (GALILEO 9)",
+          "norad_id": 40889,
+          "object_id": "2015-045A"
+        },
+        {
+          "name": "GSAT0206 (GALILEO 10)",
+          "norad_id": 40890,
+          "object_id": "2015-045B"
+        },
+        {
+          "name": "GSAT0209 (GALILEO 12)",
+          "norad_id": 41174,
+          "object_id": "2015-079A"
+        },
+        {
+          "name": "GSAT0208 (GALILEO 11)",
+          "norad_id": 41175,
+          "object_id": "2015-079B"
+        },
+        {
+          "name": "GSAT0211 (GALILEO 14)",
+          "norad_id": 41549,
+          "object_id": "2016-030A"
+        },
+        {
+          "name": "GSAT0210 (GALILEO 13)",
+          "norad_id": 41550,
+          "object_id": "2016-030B"
+        },
+        {
+          "name": "GSAT0207 (GALILEO 15)",
+          "norad_id": 41859,
+          "object_id": "2016-069A"
+        },
+        {
+          "name": "GSAT0212 (GALILEO 16)",
+          "norad_id": 41860,
+          "object_id": "2016-069B"
+        },
+        {
+          "name": "GSAT0213 (GALILEO 17)",
+          "norad_id": 41861,
+          "object_id": "2016-069C"
+        },
+        {
+          "name": "GSAT0214 (GALILEO 18)",
+          "norad_id": 41862,
+          "object_id": "2016-069D"
+        },
+        {
+          "name": "GSAT0215 (GALILEO 19)",
+          "norad_id": 43055,
+          "object_id": "2017-079A"
+        },
+        {
+          "name": "GSAT0216 (GALILEO 20)",
+          "norad_id": 43056,
+          "object_id": "2017-079B"
+        },
+        {
+          "name": "GSAT0217 (GALILEO 21)",
+          "norad_id": 43057,
+          "object_id": "2017-079C"
+        },
+        {
+          "name": "GSAT0218 (GALILEO 22)",
+          "norad_id": 43058,
+          "object_id": "2017-079D"
+        },
+        {
+          "name": "GSAT0221 (GALILEO 25)",
+          "norad_id": 43564,
+          "object_id": "2018-060A"
+        },
+        {
+          "name": "GSAT0222 (GALILEO 26)",
+          "norad_id": 43565,
+          "object_id": "2018-060B"
+        },
+        {
+          "name": "GSAT0219 (GALILEO 23)",
+          "norad_id": 43566,
+          "object_id": "2018-060C"
+        },
+        {
+          "name": "GSAT0220 (GALILEO 24)",
+          "norad_id": 43567,
+          "object_id": "2018-060D"
+        },
+        {
+          "name": "GSAT0223 (GALILEO 27)",
+          "norad_id": 49809,
+          "object_id": "2021-116A"
+        },
+        {
+          "name": "GSAT0224 (GALILEO 28)",
+          "norad_id": 49810,
+          "object_id": "2021-116B"
+        },
+        {
+          "name": "GSAT0225 (GALILEO 29)",
+          "norad_id": 59598,
+          "object_id": "2024-079A"
+        },
+        {
+          "name": "GSAT0227 (GALILEO 30)",
+          "norad_id": 59600,
+          "object_id": "2024-079C"
+        },
+        {
+          "name": "GSAT0232 (GALILEO 32)",
+          "norad_id": 61182,
+          "object_id": "2024-167A"
+        },
+        {
+          "name": "GSAT0226 (GALILEO 31)",
+          "norad_id": 61183,
+          "object_id": "2024-167B"
+        }
+      ]
+    },
+    "GLO": {
+      "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=glo-ops&FORMAT=json",
+      "sats": [
+        {
+          "name": "COSMOS 2433 (720)",
+          "norad_id": 32275,
+          "object_id": "2007-052A"
+        },
+        {
+          "name": "COSMOS 2432 (719)",
+          "norad_id": 32276,
+          "object_id": "2007-052B"
+        },
+        {
+          "name": "COSMOS 2434 (721)",
+          "norad_id": 32393,
+          "object_id": "2007-065A"
+        },
+        {
+          "name": "COSMOS 2436 (723)",
+          "norad_id": 32395,
+          "object_id": "2007-065C"
+        },
+        {
+          "name": "COSMOS 2456 (730)",
+          "norad_id": 36111,
+          "object_id": "2009-070A"
+        },
+        {
+          "name": "COSMOS 2457 (733)",
+          "norad_id": 36112,
+          "object_id": "2009-070B"
+        },
+        {
+          "name": "COSMOS 2460 (732)",
+          "norad_id": 36402,
+          "object_id": "2010-007C"
+        },
+        {
+          "name": "COSMOS 2476 (744)",
+          "norad_id": 37867,
+          "object_id": "2011-064A"
+        },
+        {
+          "name": "COSMOS 2477 (745)",
+          "norad_id": 37868,
+          "object_id": "2011-064B"
+        },
+        {
+          "name": "COSMOS 2475 (743)",
+          "norad_id": 37869,
+          "object_id": "2011-064C"
+        },
+        {
+          "name": "COSMOS 2485 (747)",
+          "norad_id": 39155,
+          "object_id": "2013-019A"
+        },
+        {
+          "name": "COSMOS 2492 (754)",
+          "norad_id": 39620,
+          "object_id": "2014-012A"
+        },
+        {
+          "name": "COSMOS 2500 (755)",
+          "norad_id": 40001,
+          "object_id": "2014-032A"
+        },
+        {
+          "name": "COSMOS 2501 (702K)",
+          "norad_id": 40315,
+          "object_id": "2014-075A"
+        },
+        {
+          "name": "COSMOS 2514 (751)",
+          "norad_id": 41330,
+          "object_id": "2016-008A"
+        },
+        {
+          "name": "COSMOS 2522 (752)",
+          "norad_id": 42939,
+          "object_id": "2017-055A"
+        },
+        {
+          "name": "COSMOS 2527 (756)",
+          "norad_id": 43508,
+          "object_id": "2018-053A"
+        },
+        {
+          "name": "COSMOS 2529 (757)",
+          "norad_id": 43687,
+          "object_id": "2018-086A"
+        },
+        {
+          "name": "COSMOS 2534 (758)",
+          "norad_id": 44299,
+          "object_id": "2019-030A"
+        },
+        {
+          "name": "COSMOS 2544 (759)",
+          "norad_id": 44850,
+          "object_id": "2019-088A"
+        },
+        {
+          "name": "COSMOS 2545 (760)",
+          "norad_id": 45358,
+          "object_id": "2020-018A"
+        },
+        {
+          "name": "COSMOS 2547 (705K)",
+          "norad_id": 46805,
+          "object_id": "2020-075A"
+        },
+        {
+          "name": "COSMOS 2557 (706K)",
+          "norad_id": 52984,
+          "object_id": "2022-075A"
+        },
+        {
+          "name": "COSMOS 2559 (707K)",
+          "norad_id": 54031,
+          "object_id": "2022-130A"
+        },
+        {
+          "name": "COSMOS 2564 (761)",
+          "norad_id": 54377,
+          "object_id": "2022-161A"
+        },
+        {
+          "name": "COSMOS 2569 (703K)",
+          "norad_id": 57517,
+          "object_id": "2023-114A"
+        }
+      ]
+    },
+    "BEI": {
+      "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=beidou&FORMAT=json",
+      "sats": [
+        {
+          "name": "BEIDOU-2 IGSO-1 (C06)",
+          "norad_id": 36828,
+          "object_id": "2010-036A"
+        },
+        {
+          "name": "BEIDOU-2 G4 (C04)",
+          "norad_id": 37210,
+          "object_id": "2010-057A"
+        },
+        {
+          "name": "BEIDOU-2 IGSO-2 (C07)",
+          "norad_id": 37256,
+          "object_id": "2010-068A"
+        },
+        {
+          "name": "BEIDOU-2 IGSO-3 (C08)",
+          "norad_id": 37384,
+          "object_id": "2011-013A"
+        },
+        {
+          "name": "BEIDOU-2 IGSO-4 (C09)",
+          "norad_id": 37763,
+          "object_id": "2011-038A"
+        },
+        {
+          "name": "BEIDOU-2 IGSO-5 (C10)",
+          "norad_id": 37948,
+          "object_id": "2011-073A"
+        },
+        {
+          "name": "BEIDOU-2 G5 (C05)",
+          "norad_id": 38091,
+          "object_id": "2012-008A"
+        },
+        {
+          "name": "BEIDOU-2 M3 (C11)",
+          "norad_id": 38250,
+          "object_id": "2012-018A"
+        },
+        {
+          "name": "BEIDOU-2 M4 (C12)",
+          "norad_id": 38251,
+          "object_id": "2012-018B"
+        },
+        {
+          "name": "BEIDOU-2 M6 (C14)",
+          "norad_id": 38775,
+          "object_id": "2012-050B"
+        },
+        {
+          "name": "BEIDOU-2 G6 (C02)",
+          "norad_id": 38953,
+          "object_id": "2012-059A"
+        },
+        {
+          "name": "BEIDOU-3S IGSO-1S (C31)",
+          "norad_id": 40549,
+          "object_id": "2015-019A"
+        },
+        {
+          "name": "BEIDOU-3S M2S (C58)",
+          "norad_id": 40748,
+          "object_id": "2015-037A"
+        },
+        {
+          "name": "BEIDOU-3S M1S (C57)",
+          "norad_id": 40749,
+          "object_id": "2015-037B"
+        },
+        {
+          "name": "BEIDOU-3S IGSO-2S (C56)",
+          "norad_id": 40938,
+          "object_id": "2015-053A"
+        },
+        {
+          "name": "BEIDOU-2 IGSO-6 (C13)",
+          "norad_id": 41434,
+          "object_id": "2016-021A"
+        },
+        {
+          "name": "BEIDOU-2 G7 (C03)",
+          "norad_id": 41586,
+          "object_id": "2016-037A"
+        },
+        {
+          "name": "BEIDOU-3 M1 (C19)",
+          "norad_id": 43001,
+          "object_id": "2017-069A"
+        },
+        {
+          "name": "BEIDOU-3 M2 (C20)",
+          "norad_id": 43002,
+          "object_id": "2017-069B"
+        },
+        {
+          "name": "BEIDOU-3 M7 (C27)",
+          "norad_id": 43107,
+          "object_id": "2018-003A"
+        },
+        {
+          "name": "BEIDOU-3 M8 (C28)",
+          "norad_id": 43108,
+          "object_id": "2018-003B"
+        },
+        {
+          "name": "BEIDOU-3 M4 (C22)",
+          "norad_id": 43207,
+          "object_id": "2018-018A"
+        },
+        {
+          "name": "BEIDOU-3 M3 (C21)",
+          "norad_id": 43208,
+          "object_id": "2018-018B"
+        },
+        {
+          "name": "BEIDOU-3 M9 (C29)",
+          "norad_id": 43245,
+          "object_id": "2018-029A"
+        },
+        {
+          "name": "BEIDOU-3 M10 (C30)",
+          "norad_id": 43246,
+          "object_id": "2018-029B"
+        },
+        {
+          "name": "BEIDOU-2 IGSO-7 (C16)",
+          "norad_id": 43539,
+          "object_id": "2018-057A"
+        },
+        {
+          "name": "BEIDOU-3 M5 (C23)",
+          "norad_id": 43581,
+          "object_id": "2018-062A"
+        },
+        {
+          "name": "BEIDOU-3 M6 (C24)",
+          "norad_id": 43582,
+          "object_id": "2018-062B"
+        },
+        {
+          "name": "BEIDOU-3 M12 (C26)",
+          "norad_id": 43602,
+          "object_id": "2018-067A"
+        },
+        {
+          "name": "BEIDOU-3 M11 (C25)",
+          "norad_id": 43603,
+          "object_id": "2018-067B"
+        },
+        {
+          "name": "BEIDOU-3 M13 (C32)",
+          "norad_id": 43622,
+          "object_id": "2018-072A"
+        },
+        {
+          "name": "BEIDOU-3 M14 (C33)",
+          "norad_id": 43623,
+          "object_id": "2018-072B"
+        },
+        {
+          "name": "BEIDOU-3 M16 (C35)",
+          "norad_id": 43647,
+          "object_id": "2018-078A"
+        },
+        {
+          "name": "BEIDOU-3 M15 (C34)",
+          "norad_id": 43648,
+          "object_id": "2018-078B"
+        },
+        {
+          "name": "BEIDOU-3 G1 (C59)",
+          "norad_id": 43683,
+          "object_id": "2018-085A"
+        },
+        {
+          "name": "BEIDOU-3 M17 (C36)",
+          "norad_id": 43706,
+          "object_id": "2018-093A"
+        },
+        {
+          "name": "BEIDOU-3 M18 (C37)",
+          "norad_id": 43707,
+          "object_id": "2018-093B"
+        },
+        {
+          "name": "BEIDOU-3 IGSO-1 (C38)",
+          "norad_id": 44204,
+          "object_id": "2019-023A"
+        },
+        {
+          "name": "BEIDOU-2 G8 (C01)",
+          "norad_id": 44231,
+          "object_id": "2019-027A"
+        },
+        {
+          "name": "BEIDOU-3 IGSO-2 (C39)",
+          "norad_id": 44337,
+          "object_id": "2019-035A"
+        },
+        {
+          "name": "BEIDOU-3 M24 (C46)",
+          "norad_id": 44542,
+          "object_id": "2019-061A"
+        },
+        {
+          "name": "BEIDOU-3 M23 (C45)",
+          "norad_id": 44543,
+          "object_id": "2019-061B"
+        },
+        {
+          "name": "BEIDOU-3 IGSO-3 (C40)",
+          "norad_id": 44709,
+          "object_id": "2019-073A"
+        },
+        {
+          "name": "BEIDOU-3 M22 (C44)",
+          "norad_id": 44793,
+          "object_id": "2019-078A"
+        },
+        {
+          "name": "BEIDOU-3 M21 (C43)",
+          "norad_id": 44794,
+          "object_id": "2019-078B"
+        },
+        {
+          "name": "BEIDOU-3 M19 (C41)",
+          "norad_id": 44864,
+          "object_id": "2019-090A"
+        },
+        {
+          "name": "BEIDOU-3 M20 (C42)",
+          "norad_id": 44865,
+          "object_id": "2019-090B"
+        },
+        {
+          "name": "BEIDOU-3 G2 (C60)",
+          "norad_id": 45344,
+          "object_id": "2020-017A"
+        },
+        {
+          "name": "BEIDOU-3 G3 (C61)",
+          "norad_id": 45807,
+          "object_id": "2020-040A"
+        },
+        {
+          "name": "BEIDOU-3 G4 (C62)",
+          "norad_id": 56564,
+          "object_id": "2023-066A"
+        },
+        {
+          "name": "BEIDOU-3 M28 (C50)",
+          "norad_id": 58654,
+          "object_id": "2023-207A"
+        },
+        {
+          "name": "BEIDOU-3 M26 (C48)",
+          "norad_id": 58655,
+          "object_id": "2023-207B"
+        }
+      ]
+    }
+  }
+}

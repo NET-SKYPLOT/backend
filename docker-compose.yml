@@ -1,0 +1,33 @@
+services:
+  api_gateway:
+    platform: linux/amd64
+    build: ./api_gateway
+    ports:
+      - "8760:5000"
+    depends_on:
+      - data_integrator
+      - computations
+    networks:
+      - net-skyplot
+
+  data_integrator:
+    platform: linux/amd64
+    build: ./data_integrator
+    ports:
+      - "8761:5001"
+    networks:
+      - net-skyplot
+
+  computations:
+    platform: linux/amd64
+    build: ./computations
+    ports:
+      - "8762:5002"
+    depends_on:
+      - data_integrator
+    networks:
+      - net-skyplot
+
+networks:
+  net-skyplot:
+    driver: bridge
