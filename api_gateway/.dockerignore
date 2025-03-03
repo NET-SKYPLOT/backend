@@ -1,0 +1,15 @@
+# Ignore test directories
+/api_gateway/test
+
+# Ignore system files
+.DS_Store
+.idea/
+
+# Ignore environment files and directories
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
