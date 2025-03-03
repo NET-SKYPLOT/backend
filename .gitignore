@@ -209,4 +209,4 @@ cython_debug/
 /api_gateway/test
 /computations/test
 /data_integrator/test
-/data_integrator/services/dem/dems
+/data_integrator/services/dem
