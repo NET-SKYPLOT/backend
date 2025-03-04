@@ -2,7 +2,7 @@ services:
   api_gateway:
     build: ./api_gateway
     ports:
-      - "8760:5000"
+      - "5000:5000"
     depends_on:
       - data_integrator
       - computations
@@ -12,14 +12,14 @@ services:
   data_integrator:
     build: ./data_integrator
     ports:
-      - "8761:5001"
+      - "5001:5001"
     networks:
       - net-skyplot
 
   computations:
     build: ./computations
     ports:
-      - "8762:5002"
+      - "5002:5002"
     depends_on:
       - data_integrator
     networks:
