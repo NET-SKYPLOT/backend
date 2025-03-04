@@ -12,6 +12,3 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
-# Ignore specific service directories
-/services/dem

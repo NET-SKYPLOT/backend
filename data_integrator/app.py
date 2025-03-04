@@ -10,7 +10,7 @@ from datetime import datetime
 import logging
 from config import config, DEM_SOURCES
 from services.almanac.almanac import AlmanacService
-from services.dem import DEMService
+from services.dem.dem import DEMService
 from services.constellations import ConstellationManager
 
 app = Flask(__name__)
