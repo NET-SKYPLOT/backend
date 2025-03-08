@@ -8,8 +8,8 @@ app = Flask(__name__)
 CORS(app)
 
 # Service URLs
-DATA_INTEGRATOR_URL = "http://data_integrator:8761"
-COMPUTATIONS_URL = "http://computations:8762"
+DATA_INTEGRATOR_URL = "https://data_integrator:8761"
+COMPUTATIONS_URL = "https://computations:8762"
 
 # Maximum allowed distance between receivers in kilometers
 MAX_RECEIVER_DISTANCE_KM = 20
