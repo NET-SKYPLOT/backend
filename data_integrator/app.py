@@ -19,6 +19,12 @@ dem_service = DEMService()
 constellation_manager = ConstellationManager()
 
 
+# Endpoints
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "healthy"}), 200
+
+
 @app.route('/dem_availability', methods=['POST'])
 def get_available_dems():
     """Get available DEM sources for given coordinates"""

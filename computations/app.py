@@ -423,6 +423,11 @@ def lla_to_ecef(lla: Dict) -> np.ndarray:
 #         app.logger.error(f"Computation error: {str(e)}")
 #         return jsonify({"error": "Internal computation error"}), 500
 
+# Endpoints
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "healthy"}), 200
+
 
 @app.route('/metrics', methods=['POST'])
 def compute_metrics():

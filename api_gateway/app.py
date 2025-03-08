@@ -16,7 +16,6 @@ MAX_RECEIVER_DISTANCE_KM = 20
 
 
 # Helper Functions
-
 def haversine(lat1, lon1, lat2, lon2):
     """Calculate distance between two geographic points in kilometers using the Haversine formula."""
     R = 6371.0  # Earth radius in kilometers
@@ -111,6 +110,10 @@ def validate_plan_data(data):
 
 
 # Endpoints
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "healthy"}), 200
+
 
 @app.route('/api/v1/dems', methods=['POST'])
 def get_available_dems():
