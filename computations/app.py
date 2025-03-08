@@ -12,7 +12,7 @@ from services.core import ComputationPipeline, DOPCalculator
 app = Flask(__name__)
 
 # Configuration
-DATA_INTEGRATOR_URL = "https://data_integrator:8761"
+DATA_INTEGRATOR_URL = "http://data_integrator:8761"
 
 
 def parse_iso_datetime(dt_str: str) -> datetime:
