@@ -12,7 +12,7 @@ from services.core import ComputationPipeline, DOPCalculator
 app = Flask(__name__)
 
 # Configuration
-DATA_INTEGRATOR_URL = "http://netskyplot.com:8761"
+DATA_INTEGRATOR_URL = "http://api_gateway:5001"
 
 
 def parse_iso_datetime(dt_str: str) -> datetime:
