@@ -49,7 +49,7 @@ def get_available_dems():
             else:
                 # Check regional coverage
                 available = all(
-                    source_config['coverage']['min_lat'] <= receiver["coordinates"]['longitude'] <=
+                    source_config['coverage']['min_lat'] <= receiver["coordinates"]['latitude'] <=
                     source_config['coverage']['max_lat'] and
                     source_config['coverage']['min_lon'] <= receiver["coordinates"]['longitude'] <=
                     source_config['coverage']['max_lon']
