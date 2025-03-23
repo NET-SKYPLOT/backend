@@ -163,13 +163,6 @@ def create_plan():
 
         metrics_response = requests.post(f"{COMPUTATIONS_URL}/metrics", json=data)
 
-        # Dummy response for now
-        # return jsonify({
-        #     "status": "success",
-        #     "message": "Plan created successfully",
-        #     "data": data
-        # }), 200
-
         return jsonify(metrics_response.json()), 200
 
     except ValueError as ve:
