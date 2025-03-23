@@ -124,10 +124,11 @@ class OrbitalCalculator:
 
 
 class VisibilityAnalyzer:
-    def __init__(self, dem_data: Dict, obstacles: List[Dict]):
+    def __init__(self, dem_data: Dict, obstacles: List[Dict], cutoff: int):
         self.elevation_grid = np.array(dem_data['elevation'])
         self.resolution = dem_data['resolution']  # meters per cell
         self.obstacles = self._parse_obstacles(obstacles)
+        self.cutoff = cutoff
 
     def _parse_obstacles(self, obstacles: List[Dict]) -> List[Dict]:
         """Convert obstacles to a consistent internal format.
@@ -137,7 +138,7 @@ class VisibilityAnalyzer:
         """
         parsed = []
         for obs in obstacles:
-            vertices = np.array([[v['latitude'], v['longitude']] for v in obs['vertices']])
+            vertices = np.array([[v['latitude'], v['longitude']] for v in obs['vertices'][:-1]])
             parsed.append({
                 'vertices': vertices,
                 'height': obs['height']
@@ -235,7 +236,7 @@ class VisibilityAnalyzer:
         """Check if the LOS ray clears the unified terrain using a fixed 5° mask angle."""
         receiver_height = profile[0, 1]
         for dist, elev in profile:
-            los_height = receiver_height + dist * math.tan(math.radians(5))
+            los_height = receiver_height + dist * math.tan(math.radians(self.cutoff))
             if elev > los_height:
                 return False
         return True
@@ -365,142 +366,15 @@ class DOPCalculator:
             return {'gdop': 99.9, 'pdop': 99.9, 'hdop': 99.9, 'vdop': 99.9}
 
 
-# Working
-# # ----------------------------------------------------------------
-# # ComputationPipeline and Payload Generation
-# # ----------------------------------------------------------------
-# class ComputationPipeline:
-#     def __init__(self, almanac_data: Dict, dem_data: Dict, constellations: List[str], obstacles: List[Dict]):
-#         self.constellations = constellations
-#         self.orbital_calc = OrbitalCalculator(almanac_data)
-#         self.visibility_analyzer = VisibilityAnalyzer(dem_data, obstacles)
-
-#     def process_receiver(self, receiver: Dict, start_time: datetime, duration: timedelta) -> Dict:
-#         """
-#         Process a receiver scenario and build the final payload.
-#         Payload structure:
-#           {
-#             "status": "success",
-#             "request_id": "string",
-#             "planning_details": { ... },
-#             "receivers": [
-#               {
-#                 "id": "string",
-#                 "role": "string",
-#                 "coordinates": { "latitude": ..., "longitude": ..., "height": ... },
-#                 "visibility": { <constellation_name>: [ { "time": "string", "count": number }, ... ] },
-#                 "dop": { "time": [...], "gdop": [...], "pdop": [...], "hdop": [...], "vdop": [...] },
-#                 "common_visibility": {},
-#                 "common_dop": {},
-#                 "skyplot_data": { "satellites": [ ... ] }
-#               }
-#             ]
-#           }
-#         """
-#         planning_details = {
-#             "start_datetime": start_time.isoformat(),
-#             "duration_hours": duration.total_seconds() / 3600,
-#             "interval_minutes": 30,
-#             "application": "GNSS Planning"
-#         }
-#         receiver_lla = receiver["coordinates"]
-#         # Derive receiver height from DEM (interpolated at receiver location)
-#         receiver_lla["height"] = self.visibility_analyzer._get_dem_elevation(receiver_lla["latitude"],
-#                                                                               receiver_lla["longitude"],
-#                                                                               receiver_lla)
-#         receiver_ecef = lla_to_ecef(receiver_lla)
-#         time_steps = self._generate_time_steps(start_time, duration)
-#         # For each time step, store visible satellites (tuple (constellation, sat_ecef))
-#         all_visible_sats = {t.isoformat(): [] for t in time_steps}
-#         skyplot_data = {}  # Keyed by satellite PRN
-#         for sat in self.orbital_calc.satellites.values():
-#             if sat.constellation not in self.constellations:
-#                 continue
-#             sat_traj = []
-#             for dt in time_steps:
-#                 try:
-#                     sat_ecef = sat.get_position(dt)  # Expected as np.ndarray in km
-#                     visible = self.visibility_analyzer.check_visibility(receiver_lla, sat_ecef)
-#                     az, el = SkyplotGenerator.calculate_azimuth_elevation(receiver_lla, sat_ecef)
-#                     sat_traj.append({
-#                         "time": dt.isoformat(),
-#                         "azimuth": round(az, 4),
-#                         "elevation": round(el, 4),
-#                         "visible": visible
-#                     })
-#                     if visible and el >= 5:
-#                         all_visible_sats[dt.isoformat()].append((sat.constellation, sat_ecef))
-#                 except Exception as e:
-#                     print(f"Error processing {sat.prn} at {dt}: {str(e)}")
-#                     continue
-#             skyplot_data[sat.prn] = {
-#                 "constellation": sat.constellation,
-#                 "satellite_id": sat.prn,
-#                 "trajectory": sat_traj
-#             }
-#         # Build DOP values per time step
-#         dop_list = []
-#         for dt_iso, visible_list in all_visible_sats.items():
-#             dop = DOPCalculator.calculate_dop(visible_list, receiver_ecef)
-#             dop_list.append({
-#                 "time": dt_iso,
-#                 "gdop": dop["gdop"],
-#                 "pdop": dop["pdop"],
-#                 "hdop": dop["hdop"],
-#                 "vdop": dop["vdop"]
-#             })
-#         # Build visibility counts per constellation
-#         vis_by_const = {}
-#         for dt_iso, vis_list in all_visible_sats.items():
-#             counts = {}
-#             for cons, _ in vis_list:
-#                 counts[cons] = counts.get(cons, 0) + 1
-#             for cons, cnt in counts.items():
-#                 if cons not in vis_by_const:
-#                     vis_by_const[cons] = []
-#                 vis_by_const[cons].append({"time": dt_iso, "count": cnt})
-#         # Assemble receiver payload
-#         receiver_payload = {
-#             "id": receiver.get("id", "unknown"),
-#             "role": receiver.get("role", ""),
-#             "coordinates": receiver_lla,
-#             "visibility": vis_by_const,
-#             "dop": {
-#                 "time": [entry["time"] for entry in dop_list],
-#                 "gdop": [entry["gdop"] for entry in dop_list],
-#                 "pdop": [entry["pdop"] for entry in dop_list],
-#                 "hdop": [entry["hdop"] for entry in dop_list],
-#                 "vdop": [entry["vdop"] for entry in dop_list],
-#             },
-#             "common_visibility": {},
-#             "common_dop": {},
-#             "skyplot_data": {
-#                 "satellites": list(skyplot_data.values())
-#             }
-#         }
-#         payload = {
-#             "status": "success",
-#             "request_id": "req_123",  # Placeholder; generate as needed.
-#             "planning_details": planning_details,
-#             "receivers": [receiver_payload]
-#         }
-#         return payload
-
-#     def _generate_time_steps(self, start: datetime, duration: timedelta) -> List[datetime]:
-#         """Generate time steps at 30‑minute intervals."""
-#         return [start + n * timedelta(minutes=30) for n in range(int(duration.total_seconds() // 1800))]
-
-#     @staticmethod
-#     def _lla_to_ecef(lla: Dict) -> np.ndarray:
-#         """Static version of lla_to_ecef for internal use."""
-#         return lla_to_ecef(lla)
 
 
 class ComputationPipeline:
-    def __init__(self, almanac_data: Dict, dem_data: Dict, constellations: List[str], obstacles: List[Dict]):
+    def __init__(self, almanac_data: Dict, dem_data: Dict, constellations: List[str], obstacles: List[Dict], cutoff: int):
         self.constellations = constellations
         self.orbital_calc = OrbitalCalculator(almanac_data)
-        self.visibility_analyzer = VisibilityAnalyzer(dem_data, obstacles)
+        self.visibility_analyzer = VisibilityAnalyzer(dem_data, obstacles, cutoff)
+        self.cutoff = cutoff
+        self.intervals = 10
 
     def process_receiver(self, receiver: Dict, start_time: datetime, duration: timedelta) -> Dict:
         """
@@ -528,7 +402,7 @@ class ComputationPipeline:
         planning_details = {
             "start_datetime": start_time.isoformat(),
             "duration_hours": duration.total_seconds() / 3600,
-            "interval_minutes": 30,
+            "interval_minutes": self.intervals,
             "application": "GNSS Planning"
         }
         receiver_lla = receiver["coordinates"]
@@ -537,10 +411,11 @@ class ComputationPipeline:
                                                                              receiver_lla["longitude"],
                                                                              receiver_lla)
         receiver_ecef = lla_to_ecef(receiver_lla)
-        time_steps = self._generate_time_steps(start_time, duration)
+        time_steps = self._generate_time_steps(start_time, duration, step_minutes=self.intervals)
         # For each time step, store visible satellites (aggregated) and raw visible satellites (with sat_id)
         all_visible_sats = {t.isoformat(): [] for t in time_steps}
         raw_visible = {t.isoformat(): [] for t in time_steps}
+        sat_pos_for_wv = {t.isoformat(): [] for t in time_steps}
         skyplot_data = {}  # Keyed by satellite PRN
         for sat in self.orbital_calc.satellites.values():
             if sat.constellation not in self.constellations:
@@ -549,15 +424,22 @@ class ComputationPipeline:
             for dt in time_steps:
                 try:
                     sat_ecef = sat.get_position(dt)  # Expected as np.ndarray in km
+                    sat_pos_for_wv[dt.isoformat()].append((sat.constellation, sat_ecef, sat.prn))
                     visible = self.visibility_analyzer.check_visibility(receiver_lla, sat_ecef)
                     az, el = SkyplotGenerator.calculate_azimuth_elevation(receiver_lla, sat_ecef)
-                    sat_traj.append({
-                        "time": dt.isoformat(),
-                        "azimuth": round(az, 4),
-                        "elevation": round(el, 4),
-                        "visible": visible
-                    })
-                    if visible and el >= 0.1:
+                    # sat_traj.append({
+                    #     "time": dt.isoformat(),
+                    #     "azimuth": round(az, 2),
+                    #     "elevation": round(el, 2),
+                    #     "visible": visible
+                    # })
+                    if visible and el >= self.cutoff:
+                        sat_traj.append({
+                            "time": dt.isoformat(),
+                            "azimuth": round(az, 2),
+                            "elevation": round(el, 2),
+                            "visible": visible
+                        })
                         all_visible_sats[dt.isoformat()].append((sat.constellation, sat_ecef))
                         raw_visible[dt.isoformat()].append((sat.constellation, sat_ecef, sat.prn))
                 except Exception as e:
@@ -613,13 +495,21 @@ class ComputationPipeline:
             "status": "success",
             "request_id": "req_123",  # Placeholder; generate as needed.
             "planning_details": planning_details,
-            "receivers": [receiver_payload]
+            "receivers": [receiver_payload],
+            "satellites_positions": sat_pos_for_wv
         }
         return payload
 
-    def _generate_time_steps(self, start: datetime, duration: timedelta) -> List[datetime]:
-        """Generate time steps at 30‑minute intervals."""
-        return [start + n * timedelta(minutes=30) for n in range(int(duration.total_seconds() // 1800))]
+    def _generate_time_steps(self, start: datetime, duration: timedelta, step_minutes: int) -> List[datetime]:
+        """Generate time steps at custom minute intervals."""
+        step = timedelta(minutes=step_minutes)
+        total_seconds = duration.total_seconds()
+        step_seconds = step_minutes * 60
+        
+        # Calculate number of steps including partial interval
+        num_steps = int(total_seconds // step_seconds) + 1  # +1 ensures we include start time
+        
+        return [start + n * step for n in range(num_steps)]
 
     @staticmethod
     def _lla_to_ecef(lla: Dict) -> np.ndarray:
