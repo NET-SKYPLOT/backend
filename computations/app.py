@@ -170,10 +170,17 @@ def compute_metrics():
         application = data["application"]
         constellations = data['constellations']
         receivers = data['receivers']
-        almanac = requests.get(f"{DATA_INTEGRATOR_URL}/alm").json()
+        
+        # Updated almanac request with POST and start_datetime
+        almanac = requests.post(
+            f"{DATA_INTEGRATOR_URL}/alm",
+            json={"start_datetime": data['start_datetime']}
+        ).json()
+
 
         available_constellations = requests.get(f"{DATA_INTEGRATOR_URL}/constellations").json()
         almanac = update_almanac_constellation(almanac, available_constellations)
+        # print(almanac)
 
         processed_payloads = []  # Each result is a payload with a "receivers" key (a list of one receiver)
         base_receiver_payload = None
@@ -219,8 +226,6 @@ def compute_metrics():
                 # getting time intervals
                 intervals = result["planning_details"]["interval_minutes"]
 
-
-        # Compute for all satellite positions
 
         # Flatten receiver payloads into a single list.
         all_receivers = []

@@ -8,6 +8,8 @@ import numpy.linalg as LA
 from shapely.geometry import Point, Polygon, LineString
 import math
 
+from skyfield.api import Loader, EarthSatellite
+
 
 def lla_to_ecef(lla: Dict) -> np.ndarray:
     """Convert WGS84 (lat, lon, [height]) to ECEF (in km)."""
@@ -26,6 +28,20 @@ def lla_to_ecef(lla: Dict) -> np.ndarray:
     return np.array([x, y, z]) / 1000.0  # convert to km
 
 
+def geodetic2ecef(lat_deg: float, lon_deg: float, alt_km: float) -> np.ndarray:
+    """Convert geodetic coordinates (lat [deg], lon [deg], alt [km]) to ECEF coordinates (km)."""
+    # WGS84 parameters
+    a = 6378.137       # Earth's equatorial radius in km
+    e2 = 0.00669437999014  # Earth's eccentricity squared
+    lat = np.radians(lat_deg)
+    lon = np.radians(lon_deg)
+    N = a / np.sqrt(1 - e2 * np.sin(lat)**2)
+    x = (N + alt_km) * np.cos(lat) * np.cos(lon)
+    y = (N + alt_km) * np.cos(lat) * np.sin(lon)
+    z = ((1 - e2) * N + alt_km) * np.sin(lat)
+    return np.array([x, y, z])
+
+
 class Satellite:
     def __init__(self, satrec: Satrec, norad_id: int, prn: str, epoch: datetime, constellation):
         self.satrec = satrec
@@ -33,6 +49,9 @@ class Satellite:
         self.prn = prn
         self.epoch = epoch
         self.constellation = constellation
+        # These will store the original TLE lines for Skyfield cross-checking
+        self._tle_line1 = None
+        self._tle_line2 = None
 
     @classmethod
     def from_tle(cls, line1: str, line2: str, prn: str, constellation):
@@ -40,7 +59,9 @@ class Satellite:
         satrec = Satrec.twoline2rv(line1, line2, WGS84)
         norad_id = int(line2[2:7])
         epoch = cls._parse_tle_epoch(line1)
-        return cls(satrec, norad_id, prn, epoch, constellation)
+        instance = cls(satrec, norad_id, prn, epoch, constellation)
+        instance.store_tle(line1, line2)
+        return instance
 
     @classmethod
     def from_params(cls, params: Dict):
@@ -70,9 +91,14 @@ class Satellite:
         if satrec.error != 0:
             raise ValueError(f"SGP4 init failed: {satrec.error}")
 
-        return cls(satrec, params['NORAD_CAT_ID'],
-                   params['OBJECT_NAME'].split('PRN ')[-1].strip(')'),
-                   datetime.fromisoformat(params['EPOCH']))
+        instance = cls(satrec, params['NORAD_CAT_ID'],
+                       params['OBJECT_NAME'].split('PRN ')[-1].strip(')'),
+                       datetime.fromisoformat(params['EPOCH']),
+                       None)
+        # Optionally store TLE lines if available in params
+        if 'TLE_LINE1' in params and 'TLE_LINE2' in params:
+            instance.store_tle(params['TLE_LINE1'], params['TLE_LINE2'])
+        return instance
 
     @staticmethod
     def _parse_tle_epoch(line1: str) -> datetime:
@@ -83,19 +109,56 @@ class Satellite:
         base_date = datetime(year, 1, 1)
         return base_date + timedelta(days=day_of_year - 1)
 
-    def get_position(self, dt: datetime) -> Tuple[float, float, float]:
-        """Calculate ECEF position for given datetime"""
+    def get_position(self, dt: datetime) -> np.ndarray:
+        """Calculate ECEF position for given datetime using SGP4 propagation.
+           Returns a NumPy array [x, y, z] in kilometers."""
         dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
-        if abs((dt - self.epoch).total_seconds()) > 30 * 86400:  # 7 days
-            raise ValueError(f"Propagation time {dt} is too far from epoch {self.epoch}")
-
         jd, fr = jday(*dt.timetuple()[:6])
         error_code, r, _ = self.satrec.sgp4(jd, fr)
-
         if error_code != 0:
             raise ValueError(f"SGP4 propagation failed: {self.satrec.error}")
+        return np.array(r)
 
-        return r
+    @staticmethod
+    def ecef2lla(x: float, y: float, z: float) -> Tuple[float, float, float]:
+        """Convert ECEF coordinates to geodetic coordinates (lat, lon, alt) using WGS84 model.
+           Returns latitude (deg), longitude (deg), altitude (km)."""
+        a = 6378.137       # Earth's equatorial radius in km
+        e2 = 0.00669437999014  # Earth's eccentricity squared
+        r = np.sqrt(x*x + y*y)
+        # Initial guess for latitude
+        lat = np.arctan2(z, r)
+        for _ in range(5):
+            N = a / np.sqrt(1 - e2 * np.sin(lat)**2)
+            alt = r / np.cos(lat) - N
+            lat = np.arctan2(z, r * (1 - e2 * N/(N+alt)))
+        lon = np.arctan2(y, x)
+        return np.degrees(lat), np.degrees(lon), alt
+
+    def get_geodetic_position(self, dt: datetime) -> Tuple[float, float, float]:
+        """Compute geodetic position (latitude, longitude, altitude) for the given datetime.
+           Uses the SGP4-computed ECEF position and converts it to lat, lon, alt."""
+        x, y, z = self.get_position(dt)
+        return Satellite.ecef2lla(x, y, z)
+
+    def get_position_skyfield(self, dt: datetime) -> Tuple[float, float, float]:
+        """Cross-check satellite position using Skyfield for the given datetime.
+           Returns geodetic coordinates (latitude, longitude, altitude)."""
+        load = Loader('/tmp/skyfield_data')  # Adjust this path as needed
+        ts = load.timescale()
+        t_sf = ts.utc(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+        if not self._tle_line1 or not self._tle_line2:
+            raise AttributeError("TLE lines not stored in the Satellite instance for Skyfield cross-check.")
+        sat_sf = EarthSatellite(self._tle_line1, self._tle_line2, f"Sat {self.norad_id}", ts)
+        subpoint = sat_sf.at(t_sf).subpoint()
+        return subpoint.latitude.degrees, subpoint.longitude.degrees, subpoint.elevation.km
+
+    def store_tle(self, line1: str, line2: str):
+        """Store the original TLE lines for use with Skyfield cross-checking."""
+        self._tle_line1 = line1
+        self._tle_line2 = line2
+
+
 
 
 class OrbitalCalculator:
@@ -423,7 +486,12 @@ class ComputationPipeline:
             sat_traj = []
             for dt in time_steps:
                 try:
-                    sat_ecef = sat.get_position(dt)  # Expected as np.ndarray in km
+                    # sat_ecef = sat.get_position(dt)  # Expected as np.ndarray in km
+
+                    lat, lon, alt = sat.get_position_skyfield(dt)
+                    # Convert geodetic to ECEF (in km) to match the previous expected format
+                    sat_ecef = geodetic2ecef(lat, lon, alt)
+
                     sat_pos_for_wv[dt.isoformat()].append((sat.constellation, sat_ecef, sat.prn))
                     visible = self.visibility_analyzer.check_visibility(receiver_lla, sat_ecef)
                     az, el = SkyplotGenerator.calculate_azimuth_elevation(receiver_lla, sat_ecef)

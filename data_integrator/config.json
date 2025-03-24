@@ -5,6 +5,11 @@
       "tle_url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=tle",
       "refresh_hours": 6,
       "refresh_limit_rate_minutes": 120
+    },
+    {
+      "spacetrack_user": "saeed.amiri@studenti.polito.it",
+      "spacetrack_pass": "y2fUy9-X3z!DqZz",
+      "historical_range_days": 3
     }
   ],
   "dem": [
