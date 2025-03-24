@@ -12,21 +12,21 @@ class AlmanacService:
 
     def _load_config(self):
         with open('config.json') as f:
-            return json.load(f)['almanac'][0]
+            return json.load(f)['almanac']
 
     def _is_stale(self, cached_data):
         if not os.path.exists(self.CACHE_FILE):
             return True
         last_fetched = datetime.fromisoformat(cached_data['timestamp'])
         return datetime.now() - last_fetched > timedelta(
-            hours=self.config['refresh_hours']
+            hours=self.config[0]['refresh_hours']
         )
 
     def _fetch_fresh_data(self):
         try:
-            print(self.config)
-            response = requests.get(self.config['url'])
-            tle_response = requests.get(self.config['tle_url'])
+            print(self.config[0])
+            response = requests.get(self.config[0]['url'])
+            tle_response = requests.get(self.config[0]['tle_url'])
 
             if response.status_code == 200 and tle_response.status_code == 200:
                 # print(response.json())
@@ -103,3 +103,103 @@ class AlmanacService:
             return cached['data']
         except UnboundLocalError:
             return None
+
+
+    def get_historical_almanac(self, target_date: datetime):
+        """Retrieve historical almanac from Space-Track.org"""
+        print("get Historical almanac...")
+        try:
+            # Authenticate with Space-Track
+            session = self._authenticate_spacetrack()
+            # print(session)
+            # Get TLEs closest to target date
+            tle_data = self._query_spacetrack(session, target_date)
+            # print("tle_data", tle_data)
+            # Convert to compatible format
+            return self._convert_to_almanac_format(tle_data, target_date)
+            
+        except Exception as e:
+            print(f"Historical almanac error: {str(e)}")
+            return None
+        finally:
+            if 'session' in locals():
+                session.close()
+
+    def _authenticate_spacetrack(self):
+        """Authenticate with Space-Track.org"""
+        auth_url = "https://www.space-track.org/ajaxauth/login"
+        credentials = {
+            'identity': self.config[1]['spacetrack_user'],
+            'password': self.config[1]['spacetrack_pass']
+        }
+        
+        session = requests.Session()
+        response = session.post(auth_url, data=credentials)
+        response.raise_for_status()
+        return session
+
+    def _query_spacetrack(self, session, target_date):
+        """Query Space-Track for TLEs around target date"""
+        # Calculate date range (±3 days)
+        start_date = (target_date - timedelta(days=3)).strftime("%Y-%m-%d")
+        end_date = (target_date + timedelta(days=3)).strftime("%Y-%m-%d")
+
+        # GNSS NORAD ID ranges
+        gnss_ranges = [
+            "25000,27000",  # GPS
+            "27000,29000",  # GLONASS
+            "36000,38000",  # BeiDou
+            "41000,42000"   # Galileo
+        ]
+
+        # Build query URL
+        base_url = "https://www.space-track.org/basicspacedata/query/class/gp_history/"
+        query = [
+            f"EPOCH/{start_date}--{end_date}",
+            "format/json",
+            "orderby/EPOCH desc",  # Get nearest first
+            f"NORAD_CAT_ID/{','.join(gnss_ranges)}"
+        ]
+        
+        response = session.get(f"{base_url}{'/'.join(query)}")
+        # print(response.json())
+        response.raise_for_status()
+        
+        return response.text
+
+    def _convert_to_almanac_format(self, tle_text, target_date):
+        """Convert raw TLEs to your existing almanac format"""
+        tle_sets = self._parse_tle_data(tle_text)
+        
+        formatted_data = []
+        for tle in tle_sets:
+            # Extract NORAD ID from line1
+            norad_id = int(tle['line1'][2:7])
+            
+            formatted_data.append({
+                "OBJECT_NAME": tle['name'],
+                "NORAD_CAT_ID": norad_id,
+                "EPOCH": target_date.isoformat(),
+                "line1": tle['line1'],
+                "line2": tle['line2'],
+                # Add constellation based on NORAD ID ranges
+                "constellation": self._get_constellation(norad_id)
+            })
+        
+        print("form tle data...", formatted_data)
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "data": formatted_data
+        }
+
+    def _get_constellation(self, norad_id: int) -> str:
+        """Determine constellation from NORAD ID"""
+        if 25000 <= norad_id <= 27000:
+            return "GPS"
+        elif 27000 < norad_id <= 29000:
+            return "GLONASS"
+        elif 36000 <= norad_id <= 38000:
+            return "BEIDOU"
+        elif 41000 <= norad_id <= 42000:
+            return "GALILEO"
+        return "UNKNOWN"

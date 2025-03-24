@@ -6,7 +6,8 @@ from io import BytesIO
 import numpy as np
 import math
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from dateutil import parser
 import logging
 from config import config, DEM_SOURCES
 from services.almanac.almanac import AlmanacService
@@ -123,9 +124,47 @@ def get_dem_data():
     return jsonify({"error": "DEM data unavailable"}), 500
 
 
-@app.route('/alm', methods=['GET'])
+# @app.route('/alm', methods=['GET'])
+# def get_almanac():
+#     data = almanac_service.get_almanac()
+#     if data:
+#         return jsonify({'status': 'success', 'data': data})
+#     return jsonify({'error': 'Almanac unavailable'}), 500
+
+@app.route('/alm', methods=['POST'])
 def get_almanac():
-    data = almanac_service.get_almanac()
+    input_data = request.json
+    alm_datetime = None
+    use_historical = False
+
+    if input_data and 'start_datetime' in input_data:
+        try:
+            # Parse with proper UTC handling
+            alm_datetime_str = input_data["start_datetime"].replace('Z', '+00:00')
+            alm_datetime = datetime.fromisoformat(alm_datetime_str)
+            
+            # Ensure timezone awareness
+            if alm_datetime.tzinfo is None:
+                alm_datetime = alm_datetime.replace(tzinfo=timezone.utc)
+            else:
+                alm_datetime = alm_datetime.astimezone(timezone.utc)
+            
+            logging.info(alm_datetime)
+            # Check if older than 7 days
+            seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+            use_historical = alm_datetime < seven_days_ago
+            
+        except (ValueError, KeyError) as e:
+            return jsonify({'error': f'Invalid datetime format: {str(e)}'}), 400
+
+    # Rest of your existing code...
+    if use_historical:
+        data = almanac_service.get_historical_almanac(alm_datetime)
+    # elif alm_datetime:
+    #     data = almanac_service.get_almanac(alm_datetime)
+    else:
+        data = almanac_service.get_almanac()
+
     if data:
         return jsonify({'status': 'success', 'data': data})
     return jsonify({'error': 'Almanac unavailable'}), 500

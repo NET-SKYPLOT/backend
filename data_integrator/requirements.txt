@@ -4,3 +4,4 @@ rasterio==1.4.2
 numpy==1.24
 pyproj==3.6.1
 gunicorn
+python-dateutil
