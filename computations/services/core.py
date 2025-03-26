@@ -380,16 +380,18 @@ class SkyplotGenerator:
         vec = satellite_ecef - rec_ecef
         lat = math.radians(receiver_lla['latitude'])
         lon = math.radians(receiver_lla['longitude'])
+        # Correct ENU rotation matrix
         R = np.array([
-            [-math.sin(lon), -math.sin(lat) * math.cos(lon), math.cos(lat) * math.cos(lon)],
-            [math.cos(lon), -math.sin(lat) * math.sin(lon), math.cos(lat) * math.sin(lon)],
-            [0, math.cos(lat), math.sin(lat)]
+            [-math.sin(lon),             math.cos(lon),              0],
+            [-math.sin(lat)*math.cos(lon), -math.sin(lat)*math.sin(lon), math.cos(lat)],
+            [ math.cos(lat)*math.cos(lon),  math.cos(lat)*math.sin(lon), math.sin(lat)]
         ])
         enu = R.dot(vec)
         e, n, u = enu
         azimuth = (math.degrees(math.atan2(e, n)) + 360) % 360
         elevation = math.degrees(math.atan2(u, math.sqrt(e ** 2 + n ** 2)))
         return azimuth, elevation
+
 
 
 # =============================
