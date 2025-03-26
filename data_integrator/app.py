@@ -68,7 +68,7 @@ def get_available_dems():
                     for dem_type, dem_cfg in source_config['dems'].items()
                 ]
 
-                # Find best resolution in this source
+                # Find the best resolution in this source
                 source_best_res = min(d['resolution'] for d in dems)
 
                 available_sources[source_id] = {
@@ -142,18 +142,18 @@ def get_almanac():
             # Parse with proper UTC handling
             alm_datetime_str = input_data["start_datetime"].replace('Z', '+00:00')
             alm_datetime = datetime.fromisoformat(alm_datetime_str)
-            
+
             # Ensure timezone awareness
             if alm_datetime.tzinfo is None:
                 alm_datetime = alm_datetime.replace(tzinfo=timezone.utc)
             else:
                 alm_datetime = alm_datetime.astimezone(timezone.utc)
-            
+
             logging.info(alm_datetime)
             # Check if older than 7 days
             seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
             use_historical = alm_datetime < seven_days_ago
-            
+
         except (ValueError, KeyError) as e:
             return jsonify({'error': f'Invalid datetime format: {str(e)}'}), 400
 
