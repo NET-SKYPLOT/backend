@@ -397,9 +397,10 @@ class SkyplotGenerator:
 # =============================
 # DOPCalculator Implementation
 # =============================
+
 class DOPCalculator:
     @staticmethod
-    def calculate_dop(visible_sats: List[Tuple[str, npt.NDArray]], receiver_ecef: npt.NDArray) -> Dict[str, float]:
+    def calculate_dop(visible_sats: list, receiver_ecef) -> dict:
         """
         Compute DOP metrics given a list of visible satellites.
         Each element in visible_sats is a tuple (constellation, sat_ecef).
@@ -417,8 +418,42 @@ class DOPCalculator:
             if r == 0:
                 continue
             u = vec / r
-            # The row is [u_x, u_y, u_z, 1] (1 for clock bias)
             H.append([u[0], u[1], u[2], 1])
+        H = np.array(H)
+        try:
+            Q = LA.inv(H.T.dot(H))
+            gdop = math.sqrt(np.trace(Q))
+            pdop = math.sqrt(Q[0, 0] + Q[1, 1] + Q[2, 2])
+            hdop = math.sqrt(Q[0, 0] + Q[1, 1])
+            vdop = math.sqrt(Q[2, 2])
+            return {'gdop': gdop, 'pdop': pdop, 'hdop': hdop, 'vdop': vdop}
+        except LA.LinAlgError:
+            return {'gdop': 99.9, 'pdop': 99.9, 'hdop': 99.9, 'vdop': 99.9}
+
+    @staticmethod
+    def calculate_weighted_dop(weighted_sats: list, receiver_ecef) -> dict:
+        """
+        Compute weighted DOP metrics given a list of satellites with weights.
+        Each element in weighted_sats is a tuple (constellation, sat_ecef, weight).
+        Each row in the design matrix is scaled by sqrt(weight) to reflect its reliability.
+        Returns gdop, pdop, hdop, vdop.
+        If fewer than 4 satellites with non-zero weight are provided, return large values.
+        """
+        # Filter out satellites with zero or near-zero weight.
+        weighted_sats = [item for item in weighted_sats if item[2] > 1e-3]
+        if len(weighted_sats) < 4:
+            return {'gdop': 99.9, 'pdop': 99.9, 'hdop': 99.9, 'vdop': 99.9}
+
+        H = []
+        for cons, sat_ecef, weight in weighted_sats:
+            vec = sat_ecef - receiver_ecef
+            r = LA.norm(vec)
+            if r == 0:
+                continue
+            u = vec / r
+            # Scale the row by the square root of the weight.
+            factor = math.sqrt(weight)
+            H.append([factor * u[0], factor * u[1], factor * u[2], factor])
         H = np.array(H)
         try:
             Q = LA.inv(H.T.dot(H))
@@ -432,16 +467,15 @@ class DOPCalculator:
 
 
 
-
 class ComputationPipeline:
-    def __init__(self, almanac_data: Dict, dem_data: Dict, constellations: List[str], obstacles: List[Dict], cutoff: int):
+    def __init__(self, almanac_data: dict, dem_data: dict, constellations: list, obstacles: list, cutoff: int):
         self.constellations = constellations
         self.orbital_calc = OrbitalCalculator(almanac_data)
         self.visibility_analyzer = VisibilityAnalyzer(dem_data, obstacles, cutoff)
         self.cutoff = cutoff
         self.intervals = 10
 
-    def process_receiver(self, receiver: Dict, start_time: datetime, duration: timedelta) -> Dict:
+    def process_receiver(self, receiver: dict, start_time: datetime, duration: timedelta) -> dict:
         """
         Process a receiver scenario and build the final payload.
         Payload structure:
@@ -449,19 +483,8 @@ class ComputationPipeline:
             "status": "success",
             "request_id": "string",
             "planning_details": { ... },
-            "receivers": [
-              {
-                "id": "string",
-                "role": "string",
-                "coordinates": { "latitude": ..., "longitude": ..., "height": ... },
-                "visibility": { <constellation_name>: [ { "time": "string", "count": number }, ... ] },
-                "dop": { "time": [...], "gdop": [...], "pdop": [...], "hdop": [...], "vdop": [...] },
-                "common_visibility": {},
-                "common_dop": {},
-                "skyplot_data": { "satellites": [ ... ] },
-                "raw_visible": { <time>: [ (constellation, sat_ecef, sat_id), ... ], ... }  // internal field for common computation
-              }
-            ]
+            "receivers": [ ... ],
+            "satellites_positions": { ... }
           }
         """
         planning_details = {
@@ -472,37 +495,49 @@ class ComputationPipeline:
         }
         receiver_lla = receiver["coordinates"]
         # Derive receiver height from DEM (interpolated at receiver location)
-        receiver_lla["height"] = self.visibility_analyzer._get_dem_elevation(receiver_lla["latitude"],
-                                                                             receiver_lla["longitude"],
-                                                                             receiver_lla)
+        receiver_lla["height"] = self.visibility_analyzer._get_dem_elevation(
+            receiver_lla["latitude"],
+            receiver_lla["longitude"],
+            receiver_lla
+        )
         receiver_ecef = lla_to_ecef(receiver_lla)
         time_steps = self._generate_time_steps(start_time, duration, step_minutes=self.intervals)
-        # For each time step, store visible satellites (aggregated) and raw visible satellites (with sat_id)
+        
+        # Dictionaries to store per time step data.
         all_visible_sats = {t.isoformat(): [] for t in time_steps}
         raw_visible = {t.isoformat(): [] for t in time_steps}
+        weighted_sat_visibility = {t.isoformat(): [] for t in time_steps}  # New: includes every satellite with weight
         sat_pos_for_wv = {t.isoformat(): [] for t in time_steps}
         skyplot_data = {}  # Keyed by satellite PRN
+
         for sat in self.orbital_calc.satellites.values():
             if sat.constellation not in self.constellations:
                 continue
+
             sat_traj = []
             for dt in time_steps:
+                # Within the loop for each satellite in the time step:
                 try:
-                    # sat_ecef = sat.get_position(dt)  # Expected as np.ndarray in km
-
+                    # Compute satellite position
                     lat, lon, alt = sat.get_position_skyfield(dt)
-                    # Convert geodetic to ECEF (in km) to match the previous expected format
                     sat_ecef = geodetic2ecef(lat, lon, alt)
-
                     sat_pos_for_wv[dt.isoformat()].append((sat.constellation, sat_ecef, sat.prn))
+                    
+                    # Check visibility and compute azimuth/elevation
                     visible = self.visibility_analyzer.check_visibility(receiver_lla, sat_ecef)
                     az, el = SkyplotGenerator.calculate_azimuth_elevation(receiver_lla, sat_ecef)
-                    # sat_traj.append({
-                    #     "time": dt.isoformat(),
-                    #     "azimuth": round(az, 2),
-                    #     "elevation": round(el, 2),
-                    #     "visible": visible
-                    # })
+                    
+                    if visible and el >= self.cutoff:
+                        weight = 1.0
+                    else:
+                        # For non-visible satellites, weight is proportional to elevation, scaled down.
+                        weight = 0.5 * max(0, el) / 90
+
+
+                    # Append to weighted list regardless of visible or not.
+                    weighted_sat_visibility[dt.isoformat()].append((sat.constellation, sat_ecef, weight))
+                    
+                    # For backward compatibility, record the original visible list
                     if visible and el >= self.cutoff:
                         sat_traj.append({
                             "time": dt.isoformat(),
@@ -515,12 +550,14 @@ class ComputationPipeline:
                 except Exception as e:
                     print(f"Error processing {sat.prn} at {dt}: {str(e)}")
                     continue
+
             skyplot_data[sat.prn] = {
                 "constellation": sat.constellation,
                 "satellite_id": sat.prn,
                 "trajectory": sat_traj
             }
-        # Build DOP values per time step
+
+        # Build DOP values per time step using the original visible satellites.
         dop_list = []
         for dt_iso, visible_list in all_visible_sats.items():
             dop = DOPCalculator.calculate_dop(visible_list, receiver_ecef)
@@ -531,7 +568,20 @@ class ComputationPipeline:
                 "hdop": dop["hdop"],
                 "vdop": dop["vdop"]
             })
-        # Build visibility counts per constellation
+
+        # Build weighted DOP values per time step using the new weighted list.
+        weighted_dop_list = []
+        for dt_iso, weighted_list in weighted_sat_visibility.items():
+            weighted_dop = DOPCalculator.calculate_weighted_dop(weighted_list, receiver_ecef)
+            weighted_dop_list.append({
+                "time": dt_iso,
+                "gdop": weighted_dop["gdop"],
+                "pdop": weighted_dop["pdop"],
+                "hdop": weighted_dop["hdop"],
+                "vdop": weighted_dop["vdop"]
+            })
+
+        # Build visibility counts per constellation for original visible sats.
         vis_by_const = {}
         for dt_iso, vis_list in all_visible_sats.items():
             counts = {}
@@ -541,25 +591,33 @@ class ComputationPipeline:
                 if cons not in vis_by_const:
                     vis_by_const[cons] = []
                 vis_by_const[cons].append({"time": dt_iso, "count": cnt})
-        # Assemble receiver payload
+
+        # Assemble receiver payload.
         receiver_payload = {
             "id": receiver.get("id", "unknown"),
             "role": receiver.get("role", ""),
             "coordinates": receiver_lla,
             "visibility": vis_by_const,
-            "dop": {
+            "dop_unweighted": {
                 "time": [entry["time"] for entry in dop_list],
                 "gdop": [entry["gdop"] for entry in dop_list],
                 "pdop": [entry["pdop"] for entry in dop_list],
                 "hdop": [entry["hdop"] for entry in dop_list],
                 "vdop": [entry["vdop"] for entry in dop_list],
             },
+            "dop": {
+                "time": [entry["time"] for entry in weighted_dop_list],
+                "gdop": [entry["gdop"] for entry in weighted_dop_list],
+                "pdop": [entry["pdop"] for entry in weighted_dop_list],
+                "hdop": [entry["hdop"] for entry in weighted_dop_list],
+                "vdop": [entry["vdop"] for entry in weighted_dop_list],
+            },
             "common_visibility": {},
             "common_dop": {},
             "skyplot_data": {
                 "satellites": list(skyplot_data.values())
             },
-            "raw_visible": raw_visible  # Internal field for computing common visibility/dop
+            "raw_visible": raw_visible  # Internal field for further computation if needed.
         }
         payload = {
             "status": "success",
