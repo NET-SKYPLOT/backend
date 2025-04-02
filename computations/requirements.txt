@@ -3,5 +3,6 @@ requests==2.32.3
 numpy==1.23.5
 sgp4==2.24
 Shapely==1.8.5.post1
-gunicorn
+gunicorn==23.0.0
 skyfield==1.52
+pytz==2025.2
