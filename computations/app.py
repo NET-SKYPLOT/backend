@@ -7,6 +7,7 @@ from typing import List, Dict
 import math
 from collections import defaultdict
 import uuid
+import pytz
 
 from services.core import ComputationPipeline, DOPCalculator
 
@@ -163,13 +164,47 @@ def compute_metrics():
         data = request.get_json()
 
         # Extract required parameters
-        start_time = parse_iso_datetime(data['start_datetime'])
+        user_timezone = data.get('timezone', 'UTC')  # Default to UTC if not specified
+        raw_start_time = data['start_datetime']
+        
+        # Parse datetime without timezone first
+        try:
+            naive_start_time = datetime.fromisoformat(raw_start_time.replace('Z', '+00:00'))
+            if naive_start_time.tzinfo is not None:
+                naive_start_time = naive_start_time.replace(tzinfo=None)
+        except ValueError:
+            return jsonify({"error": "Invalid start_datetime format"}), 400
+
+        # Convert user's local time to UTC for computation
+        try:
+            if user_timezone != 'UTC':
+                # Handle both offset strings (like "+02:00") and timezone names (like "Europe/Berlin")
+                if user_timezone.startswith(('+', '-')):
+                    # Offset format - convert to timezone object
+                    offset_hours = int(user_timezone[:3])
+                    tz = pytz.FixedOffset(offset_hours * 60)
+                else:
+                    # Timezone name format
+                    tz = pytz.timezone(user_timezone)
+                
+                # Localize the naive datetime and convert to UTC
+                localized = tz.localize(naive_start_time)
+                start_time = localized.astimezone(pytz.UTC)
+            else:
+                start_time = pytz.UTC.localize(naive_start_time)
+        except Exception as e:
+            app.logger.warning(f"Invalid timezone {user_timezone}, defaulting to UTC: {str(e)}")
+            start_time = pytz.UTC.localize(naive_start_time)
+            user_timezone = 'UTC'
+        
         duration = timedelta(hours=data['duration_hours'])
         cutoff_angle = int(data.get("cutoff_angle", 0.01))
         dem_selection = data['dem']
         application = data["application"]
         constellations = data['constellations']
         receivers = data['receivers']
+
+
         
         # Updated almanac request with POST and start_datetime
         almanac = requests.post(
@@ -290,26 +325,66 @@ def compute_metrics():
             if "raw_visible" in rec_payload:
                 del rec_payload["raw_visible"]
 
-        # Build final response payload.
+
+
+        def convert_to_user_tz(iso_str):
+            """Convert UTC ISO string to user's timezone"""
+            try:
+                dt = datetime.fromisoformat(iso_str.replace('Z', '+00:00'))
+                if dt.tzinfo is None:
+                    dt = pytz.UTC.localize(dt)
+                else:
+                    dt = dt.astimezone(pytz.UTC)
+                
+                if user_timezone != 'UTC':
+                    if user_timezone.startswith(('+', '-')):
+                        offset_hours = int(user_timezone[:3])
+                        tz = pytz.FixedOffset(offset_hours * 60)
+                    else:
+                        tz = pytz.timezone(user_timezone)
+                    return dt.astimezone(tz).isoformat()
+                return dt.isoformat()
+            except:
+                return iso_str
+        
+        def convert_timestamps(obj):
+            """Recursively convert all ISO timestamps in object to user's timezone"""
+            if isinstance(obj, dict):
+                for key, value in obj.items():
+                    if isinstance(value, str):
+                        obj[key] = convert_to_user_tz(value)
+                    elif isinstance(value, (dict, list)):
+                        convert_timestamps(value)
+            elif isinstance(obj, list):
+                for i, item in enumerate(obj):
+                    if isinstance(item, str):
+                        obj[i] = convert_to_user_tz(item)
+                    elif isinstance(item, (dict, list)):
+                        convert_timestamps(item)
+        
+        # Build final response payload
         final_payload = {
             "status": "success",
             "request_id": str(uuid.uuid4()),
             "planning_details": {
-                "start_datetime": start_time.isoformat(),
+                "start_datetime": convert_to_user_tz(start_time.isoformat()),
                 "duration_hours": duration.total_seconds() / 3600,
                 "interval_minutes": intervals,
-                "application": application
+                "application": application,
+                "timezone": user_timezone
             },
             "receivers": all_receivers,
             "world_view": all_sats_pos
         }
-
+        
+        # Convert all timestamps in receivers and world_view
+        convert_timestamps(final_payload['receivers'])
+        convert_timestamps(final_payload['world_view'])
+        
         return jsonify(final_payload), 200
 
     except Exception as e:
         app.logger.error(f"Computation error: {str(e)}")
         return jsonify({"error": "Internal computation error"}), 500
-
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002, debug=True)
