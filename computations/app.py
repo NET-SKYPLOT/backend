@@ -327,38 +327,36 @@ def compute_metrics():
 
 
 
-        def convert_to_user_tz(iso_str):
-            """Convert UTC ISO string to user's timezone"""
+        def convert_to_naive(iso_str):
+            """Convert ISO string to naive datetime string (without timezone)"""
             try:
                 dt = datetime.fromisoformat(iso_str.replace('Z', '+00:00'))
-                if dt.tzinfo is None:
-                    dt = pytz.UTC.localize(dt)
-                else:
-                    dt = dt.astimezone(pytz.UTC)
-                
-                if user_timezone != 'UTC':
-                    if user_timezone.startswith(('+', '-')):
-                        offset_hours = int(user_timezone[:3])
-                        tz = pytz.FixedOffset(offset_hours * 60)
-                    else:
-                        tz = pytz.timezone(user_timezone)
-                    return dt.astimezone(tz).isoformat()
+                if dt.tzinfo is not None:
+                    if user_timezone != 'UTC':
+                        # Convert to user's timezone first, then make naive
+                        if user_timezone.startswith(('+', '-')):
+                            offset_hours = int(user_timezone[:3])
+                            tz = pytz.FixedOffset(offset_hours * 60)
+                        else:
+                            tz = pytz.timezone(user_timezone)
+                        dt = dt.astimezone(tz)
+                    return dt.replace(tzinfo=None).isoformat()
                 return dt.isoformat()
             except:
                 return iso_str
         
         def convert_timestamps(obj):
-            """Recursively convert all ISO timestamps in object to user's timezone"""
+            """Recursively convert all ISO timestamps in object to naive strings"""
             if isinstance(obj, dict):
                 for key, value in obj.items():
                     if isinstance(value, str):
-                        obj[key] = convert_to_user_tz(value)
+                        obj[key] = convert_to_naive(value)
                     elif isinstance(value, (dict, list)):
                         convert_timestamps(value)
             elif isinstance(obj, list):
                 for i, item in enumerate(obj):
                     if isinstance(item, str):
-                        obj[i] = convert_to_user_tz(item)
+                        obj[i] = convert_to_naive(item)
                     elif isinstance(item, (dict, list)):
                         convert_timestamps(item)
         
@@ -367,17 +365,17 @@ def compute_metrics():
             "status": "success",
             "request_id": str(uuid.uuid4()),
             "planning_details": {
-                "start_datetime": convert_to_user_tz(start_time.isoformat()),
+                "start_datetime": convert_to_naive(start_time.isoformat()),
                 "duration_hours": duration.total_seconds() / 3600,
                 "interval_minutes": intervals,
                 "application": application,
-                "timezone": user_timezone
+                "timezone": user_timezone  # Still include timezone in response for reference
             },
             "receivers": all_receivers,
             "world_view": all_sats_pos
         }
         
-        # Convert all timestamps in receivers and world_view
+        # Convert all timestamps in receivers and world_view to naive format
         convert_timestamps(final_payload['receivers'])
         convert_timestamps(final_payload['world_view'])
         
@@ -386,5 +384,7 @@ def compute_metrics():
     except Exception as e:
         app.logger.error(f"Computation error: {str(e)}")
         return jsonify({"error": "Internal computation error"}), 500
+
+        
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002, debug=True)
