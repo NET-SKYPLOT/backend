@@ -7,6 +7,7 @@ import numpy.typing as npt
 import numpy.linalg as LA
 from shapely.geometry import Point, Polygon, LineString
 import math
+import pytz
 
 from skyfield.api import Loader, EarthSatellite
 
@@ -106,14 +107,16 @@ class Satellite:
         epoch_str = line1[18:32]
         year = int(epoch_str[:2]) + (2000 if int(epoch_str[:2]) < 57 else 1900)
         day_of_year = float(epoch_str[2:])
-        base_date = datetime(year, 1, 1)
+        base_date = datetime(year, 1, 1, tzinfo=pytz.UTC)
         return base_date + timedelta(days=day_of_year - 1)
 
     def get_position(self, dt: datetime) -> np.ndarray:
-        """Calculate ECEF position for given datetime using SGP4 propagation.
-           Returns a NumPy array [x, y, z] in kilometers."""
-        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
-        jd, fr = jday(*dt.timetuple()[:6])
+        """Calculate ECEF position for given datetime using SGP4 propagation."""
+        if dt.tzinfo is None:
+            dt = pytz.UTC.localize(dt)
+        else:
+            dt = dt.astimezone(pytz.UTC)
+        jd, fr = jday(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
         error_code, r, _ = self.satrec.sgp4(jd, fr)
         if error_code != 0:
             raise ValueError(f"SGP4 propagation failed: {self.satrec.error}")
@@ -144,6 +147,10 @@ class Satellite:
     def get_position_skyfield(self, dt: datetime) -> Tuple[float, float, float]:
         """Cross-check satellite position using Skyfield for the given datetime.
            Returns geodetic coordinates (latitude, longitude, altitude)."""
+        if dt.tzinfo is None:
+            dt = pytz.UTC.localize(dt)
+        else:
+            dt = dt.astimezone(pytz.UTC)
         load = Loader('/tmp/skyfield_data')  # Adjust this path as needed
         ts = load.timescale()
         t_sf = ts.utc(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
@@ -487,6 +494,11 @@ class ComputationPipeline:
             "satellites_positions": { ... }
           }
         """
+        if start_time.tzinfo is None:
+            start_time = pytz.UTC.localize(start_time)
+        else:
+            start_time = start_time.astimezone(pytz.UTC)
+
         planning_details = {
             "start_datetime": start_time.isoformat(),
             "duration_hours": duration.total_seconds() / 3600,
@@ -630,14 +642,10 @@ class ComputationPipeline:
 
     def _generate_time_steps(self, start: datetime, duration: timedelta, step_minutes: int) -> List[datetime]:
         """Generate time steps at custom minute intervals."""
+        if start.tzinfo is None:
+            start = pytz.UTC.localize(start)
         step = timedelta(minutes=step_minutes)
-        total_seconds = duration.total_seconds()
-        step_seconds = step_minutes * 60
-        
-        # Calculate number of steps including partial interval
-        num_steps = int(total_seconds // step_seconds) + 1  # +1 ensures we include start time
-        
-        return [start + n * step for n in range(num_steps)]
+        return [start + n * step for n in range(int(duration.total_seconds() // (step_minutes * 60)) + 1)]
 
     @staticmethod
     def _lla_to_ecef(lla: Dict) -> np.ndarray:
